@@ -5,9 +5,6 @@ pub struct Screen {
 
 impl Screen {
     pub fn new(width: u32, height: u32) -> Screen {
-        Screen { width, height}
+        Screen { width, height }
     }
 }
-
-
-
