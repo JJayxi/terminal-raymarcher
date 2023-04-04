@@ -10,6 +10,7 @@ mod scene;
 use camera::Camera;
 use raymarcher::render;
 use scene::*;
+use colored::Color;
 
 use std::{thread, time::Duration};
 
@@ -23,37 +24,32 @@ fn main() {
         1.7,
     );
     let mut scene_objs: Vec<Box<dyn Object>> = Vec::new();
-    //scene_objs.push(Box::new(
-    //    Sphere::new(Vector::new(20.0, 10.0, -80.0), 40.0)
-    //));
 
     scene_objs.push(Box::new(Plane::new(
-        Vector::new(0.0, 30.0, 0.0),
-        Vector::new(0.1, -1.0, 0.0),
+        Vector::new(0.0, -60.0, 0.0),
+        Vector::new(0., 1.0, 0.0),
+    )));
+    scene_objs.push(Box::new(Donut::new_with_color(
+        Vector::new(30.0, 0.0, -60.0),
+        Vector::new(consts::PI / 4.0, 0.0, 0.0),
+        32.0,
+        8.0,
+        Color::TrueColor { r: (255), g: (100), b: (100) }
+    )));
+    scene_objs.push(Box::new(Cuboid::new_with_color(
+        Vector::new(-30.0, 0.0, -60.0),
+        Vector::new(0.0, 0.0, 0.0),
+        Vector::new(20.0, 20.0, 20.0),
+        Color::TrueColor { r: (150), g: (150), b: (255) }
     )));
 
-    scene_objs.push(Box::new(SmoothUnion::new(
-        Box::new(Donut::new(
-            Vector::new(30.0, 0.0, -60.0),
-            Vector::new(consts::PI / 4.0, 0.0, 0.0),
-            30.0,
-            7.0,
-        )),
-        Box::new(Cuboid::new(
-            Vector::new(-30.0, 0.0, -60.0),
-            Vector::new(0.0, 0.0, 0.0),
-            Vector::new(20.0, 20.0, 20.0),
-        )),
-        Vector::new(0.0, 0.0, -60.0),
-        false,
-        40.0,
-    )));
+    let light_position = Vector::new(50.0, 150.0, -30.0);
+    let mut scene = Scene::new(scene_objs, light_position);
 
-    let mut scene = Scene::new(scene_objs);
-
+    let mut _frame_count = 0;
     loop {
         let now = Instant::now();
-        render(&screen, &camera, &scene, 30, 100.0);
+        render(&screen, &camera, &scene, 30, 300.0);
         let elapsed = now.elapsed();
         println!("Frame time: {:?}", elapsed);
 
@@ -63,11 +59,9 @@ fn main() {
             thread::sleep(wait_time);
         }
 
-        //let sinv = ((_i as f32) / 10.0).cos() * 3.0;
+        scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
+        scene.objects[2].rotate_by(Vector::new(0.07, 0.15, 0.11));
 
-        //scene.objects[0].rotate_by(Vector::new(0.05, 0.1, 0.13));
-        //scene.objects[0].move_by(Vector::new(sinv, 0.0, 0.0));
-        scene.objects[1].rotate_by(Vector::new(0.1, 0.2, 0.15));
-        //scene.objects[1].move_by(Vector::new(0.0, 0.0, sinv / 2.0));
+        _frame_count += 1;
     }
 }

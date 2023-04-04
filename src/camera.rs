@@ -27,6 +27,6 @@ pub fn create_ray(camera: &Camera, x: u32, y: u32) -> Ray {
     let (frostum_width, frostum_height) = camera.frostum_dimensions;
     let x = (x as f32 / width) * frostum_width - (frostum_width / 2.0);
     let y = (y as f32 / height) * frostum_height - (frostum_height / 2.0);
-    let direction = Vector::new(x, y, -1.0);
+    let direction = Vector::new(x, -y, -1.0); // -y because positive y is up
     Ray::new(camera.position, direction.normalize())
 }
