@@ -3,9 +3,9 @@ use math_vector::Vector;
 use crate::camera::*;
 use crate::scene::*;
 use crate::Screen;
-use rayon::prelude::*;
 use colored::Color;
 use colored::*;
+use rayon::prelude::*;
 
 pub fn render(
     screen: &Screen,
@@ -17,7 +17,7 @@ pub fn render(
     let brightnesschars = [' ', '.', ',', '-', '=', '+', '*', '#', '%', '@'];
 
     print!("\x1B[2J\x1B[1;1H");
-    
+
     let screen_str = (0..screen.height)
         .into_par_iter()
         .map(|y| {
@@ -26,8 +26,12 @@ pub fn render(
                 .map(|x| {
                     let (brightness, color) =
                         render_pixel(camera, &scene, x, y, max_iterations, max_distance);
-                    let character = brightnesschars[(brightness * 10.0) as usize];
-                    character.to_string().color(color).to_string()
+                    let character = '#'; //brightnesschars[(brightness * 10.0) as usize];
+                    character
+                        .to_string()
+                        .on_color(color)
+                        .color(color)
+                        .to_string()
                 })
                 .collect::<String>()
                 + "\n"
@@ -60,10 +64,21 @@ pub fn render_pixel(
 
     let shadowed =
         ray_march(&mut light_ray, scene, max_iterations, light_distance) < light_distance;
-    
+
     if shadowed {
-        let penumbra = (light_distance - light_ray.distance_closest_miss) / light_distance;
-        return (brightness_adjust(1.0 - penumbra), ray.color);
+        //let penumbra = (light_distance - light_ray.distance_closest_miss) / light_distance;
+        //let brightness = 0.0; // brightness_adjust(1.0 - penumbra);
+        //if let Color::TrueColor { r, g, b } = ray.color {
+        //return (
+        //    brightness_adjust(brightness),
+        //    Color::TrueColor {
+        //        r: ((r as f32) * brightness) as u8,
+        //        g: ((g as f32) * brightness) as u8,
+        //        b: ((b as f32) * brightness) as u8,
+        //    },
+        //);
+        //}
+        return (1.0, Color::Black); // ray.color);
     }
 
     //let penumbra = (ray.closest_miss/(ray.distance_closest_miss)).min(1.0);
@@ -72,9 +87,19 @@ pub fn render_pixel(
     //making everything look like it's in the shadow
 
     //let k = (scene.light_position - point).normalize();
-    let brightness = Vector::dot(normal, light_direction).max(0.0); // * penumbra;
+    let brightness = Vector::dot(normal, light_direction).max(0.0); // * penumbra
+    if let Color::TrueColor { r, g, b } = ray.color {
+        return (
+            brightness_adjust(brightness),
+            Color::TrueColor {
+                r: ((r as f32) * brightness) as u8,
+                g: ((g as f32) * brightness) as u8,
+                b: ((b as f32) * brightness) as u8,
+            },
+        );
+    }
 
-    (brightness_adjust(brightness), ray.color)
+    (1.0, ray.color)
 }
 
 fn brightness_adjust(brightness: f32) -> f32 {
@@ -86,7 +111,7 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
     for _i in 0..max_iterations {
         let point = ray.origin + ray.direction * distance;
         let (sdf, color) = scene.sdf(&point);
-        
+
         if sdf < ray.closest_miss {
             ray.color = color;
             ray.closest_miss = sdf;
@@ -96,6 +121,7 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
         if sdf < 0.01 {
             return distance;
         }
+
         distance += sdf;
         if distance > max_distance {
             return max_distance;
@@ -106,15 +132,17 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
 }
 
 pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
-    let epsilon: f32 = 0.01;
+    
+    let epsilon: f32 = 0.005;
 
     let psdf = scene.sdf(point).0;
 
     let normal = Vector::new(
         scene.sdf(&(point + &Vector::new(epsilon, 0.0, 0.0))).0 - psdf,
         scene.sdf(&(point + &Vector::new(0.0, epsilon, 0.0))).0 - psdf,
-        scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0 - psdf
+        scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0 - psdf,
     );
+
     normal.normalize()
 }
 
@@ -128,6 +156,12 @@ pub struct Ray {
 
 impl Ray {
     pub fn new(origin: Vector<f32>, direction: Vector<f32>) -> Ray {
-        Ray { origin, direction, closest_miss: f32::MAX, distance_closest_miss: 0.0, color: Color::White }
+        Ray {
+            origin,
+            direction,
+            closest_miss: f32::MAX,
+            distance_closest_miss: 0.0,
+            color: Color::White,
+        }
     }
 }

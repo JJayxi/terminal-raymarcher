@@ -207,7 +207,7 @@ impl Cuboid {
 }
 impl Object for Cuboid {
     fn sdf(&self, point: &Vector<f32>) -> f32 {
-        let mut p = point.clone() - self.position;
+        let mut p = point - &self.position;
         p = p
             .rotate_x(self.rotation.x)
             .rotate_y(self.rotation.y)
