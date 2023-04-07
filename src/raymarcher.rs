@@ -14,8 +14,6 @@ pub fn render(
     max_iterations: u32,
     max_distance: f32,
 ) {
-    let brightnesschars = [' ', '.', ',', '-', '=', '+', '*', '#', '%', '@'];
-
     print!("\x1B[2J\x1B[1;1H");
 
     let screen_str = (0..screen.height)
@@ -24,14 +22,8 @@ pub fn render(
             (0..screen.width)
                 .into_iter()
                 .map(|x| {
-                    let (brightness, color) =
-                        render_pixel(camera, &scene, x, y, max_iterations, max_distance);
-                    let character = '#'; //brightnesschars[(brightness * 10.0) as usize];
-                    character
-                        .to_string()
-                        .on_color(color)
-                        .color(color)
-                        .to_string()
+                    let color = render_pixel(camera, &scene, x, y, max_iterations, max_distance);
+                    ' '.to_string().on_color(color).color(color).to_string()
                 })
                 .collect::<String>()
                 + "\n"
@@ -48,11 +40,11 @@ pub fn render_pixel(
     y: u32,
     max_iterations: u32,
     max_distance: f32,
-) -> (f32, Color) {
+) -> Color {
     let mut ray = create_ray(camera, x, y);
     let distance = ray_march(&mut ray, scene, max_iterations, max_distance);
     if distance >= max_distance {
-        return (0.0, Color::Black);
+        return Color::Black;
     }
     let point = ray.origin + ray.direction * distance;
     let normal = find_normal(scene, &point);
@@ -65,20 +57,23 @@ pub fn render_pixel(
     let shadowed =
         ray_march(&mut light_ray, scene, max_iterations, light_distance) < light_distance;
 
+    let mut brightness = Vector::dot(normal, light_direction).max(0.0); // * penumbra
+
     if shadowed {
-        //let penumbra = (light_distance - light_ray.distance_closest_miss) / light_distance;
-        //let brightness = 0.0; // brightness_adjust(1.0 - penumbra);
-        //if let Color::TrueColor { r, g, b } = ray.color {
-        //return (
-        //    brightness_adjust(brightness),
-        //    Color::TrueColor {
-        //        r: ((r as f32) * brightness) as u8,
-        //        g: ((g as f32) * brightness) as u8,
-        //        b: ((b as f32) * brightness) as u8,
-        //    },
-        //);
-        //}
-        return (1.0, Color::Black); // ray.color);
+        let penumbra = (light_distance - light_ray.distance_closest_miss) / light_distance;
+        brightness *= 1.0 - penumbra;
+        if let Color::TrueColor { r, g, b } = ray.color {
+            return Color::TrueColor {
+                r: ((r as f32) * brightness) as u8,
+                g: ((g as f32) * brightness) as u8,
+                b: ((b as f32) * brightness) as u8,
+            };
+        }
+        return Color::TrueColor {
+            r: (255.0 * brightness) as u8,
+            g: (255.0 * brightness) as u8,
+            b: (255.0 * brightness) as u8,
+        };
     }
 
     //let penumbra = (ray.closest_miss/(ray.distance_closest_miss)).min(1.0);
@@ -87,23 +82,16 @@ pub fn render_pixel(
     //making everything look like it's in the shadow
 
     //let k = (scene.light_position - point).normalize();
-    let brightness = Vector::dot(normal, light_direction).max(0.0); // * penumbra
+    
     if let Color::TrueColor { r, g, b } = ray.color {
-        return (
-            brightness_adjust(brightness),
-            Color::TrueColor {
-                r: ((r as f32) * brightness) as u8,
-                g: ((g as f32) * brightness) as u8,
-                b: ((b as f32) * brightness) as u8,
-            },
-        );
+        return Color::TrueColor {
+            r: ((r as f32) * brightness) as u8,
+            g: ((g as f32) * brightness) as u8,
+            b: ((b as f32) * brightness) as u8,
+        };
     }
 
-    (1.0, ray.color)
-}
-
-fn brightness_adjust(brightness: f32) -> f32 {
-    brightness.powf(1.0 / 2.2)
+    ray.color
 }
 
 pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance: f32) -> f32 {
@@ -132,15 +120,14 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
 }
 
 pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
-    
-    let epsilon: f32 = 0.005;
+    let epsilon: f32 = -0.0001;
 
     let psdf = scene.sdf(point).0;
 
     let normal = Vector::new(
-        scene.sdf(&(point + &Vector::new(epsilon, 0.0, 0.0))).0 - psdf,
-        scene.sdf(&(point + &Vector::new(0.0, epsilon, 0.0))).0 - psdf,
-        scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0 - psdf,
+        psdf - scene.sdf(&(point + &Vector::new(epsilon, 0.0, 0.0))).0,
+        psdf - scene.sdf(&(point + &Vector::new(0.0, epsilon, 0.0))).0,
+        psdf - scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0,
     );
 
     normal.normalize()

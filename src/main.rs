@@ -25,17 +25,39 @@ fn main() {
     );
     let mut scene_objs: Vec<Box<dyn Object>> = Vec::new();
 
-    scene_objs.push(Box::new(Plane::new(
+    scene_objs.push(Box::new(Plane::new_with_color(
         Vector::new(0.0, -60.0, 0.0),
         Vector::new(0., 1.0, 0.0),
+        Color::TrueColor { r: (255), g: (255), b: (255) }
     )));
-    scene_objs.push(Box::new(Donut::new_with_color(
-        Vector::new(0.0, 0.0, -60.0),
-        Vector::new(consts::PI / 4.0, 0.0, 0.0),
-        32.0,
-        8.0,
-        Color::TrueColor { r: (255), g: (100), b: (100) }
-    )));
+    scene_objs.push(
+        Box::new(SmoothUnion::new(
+            Box::new(Donut::new_with_color(
+                Vector::new(-30.0, 0.0, -60.0),
+                Vector::new(consts::PI / 4.0, 0.0, 0.0),
+                32.0,
+                8.0,
+                Color::TrueColor { r: (255), g: (100), b: (100) }
+            )),
+            Box::new(Cuboid::new_with_color(
+                Vector::new(30.0, 0.0, -60.0),
+                Vector::new(0.0, 0.0, 0.0),
+                Vector::new(20.0, 20.0, 20.0),
+                Color::TrueColor { r: (150), g: (150), b: (255) }
+            )),
+            Vector::new(0.0, 0.0, -60.0),
+            false,
+            50.0
+        )
+    ));
+    //scene_objs.push(
+    //    Box::new(Donut::new_with_color(
+    //    Vector::new(0.0, 0.0, -60.0),
+    //    Vector::new(consts::PI / 4.0, 0.0, 0.0),
+    //    32.0,
+    //    8.0,
+    //    Color::TrueColor { r: (255), g: (100), b: (100) }
+    //)));
     //scene_objs.push(Box::new(Cuboid::new_with_color(
     //    Vector::new(0.0, 0.0, -60.0),
     //    Vector::new(0.0, 0.0, 0.0),
@@ -43,7 +65,7 @@ fn main() {
     //    Color::TrueColor { r: (150), g: (150), b: (255) }
     //)));
 
-    let light_position = Vector::new(-100.0, 60.0, -30.0);
+    let light_position = Vector::new(-20.0, -10.0, 0.0);
     let mut scene = Scene::new(scene_objs, light_position);
 
     let mut _frame_count = 0;
@@ -53,7 +75,7 @@ fn main() {
         let elapsed = now.elapsed();
         println!("Frame time: {:?}", elapsed);
 
-        let frame_time: u64 = 100;
+        let frame_time: u64 = 80;
         if elapsed < Duration::from_millis(frame_time) {
             let wait_time = Duration::from_millis(frame_time) - elapsed;
             thread::sleep(wait_time);
@@ -61,7 +83,6 @@ fn main() {
 
         //scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
         scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
-
         _frame_count += 1;
     }
 }

@@ -244,6 +244,7 @@ pub struct SmoothUnion {
     pub center: Vector<f32>,
     pub centered: bool,
     pub k: f32,
+    pub color: Color,
 }
 #[allow(dead_code)]
 impl SmoothUnion {
@@ -260,6 +261,7 @@ impl SmoothUnion {
             center,
             centered,
             k,
+            color: Color::White,
         }
     }
 }
@@ -297,6 +299,6 @@ impl Object for SmoothUnion {
     }
 
     fn get_color(&self) -> Color {
-        panic!("TODO: Implement get_color for SmoothUnion, will need another parameter for position");
+        self.object1.get_color()
     }
 }
