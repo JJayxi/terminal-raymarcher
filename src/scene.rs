@@ -3,11 +3,10 @@ use std::marker::Sync;
 use colored::Color;
 
 pub trait Object: Sync {
-    fn sdf(&self, point: &Vector<f32>) -> f32;
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32);
     fn position(&self) -> Vector<f32>;
     fn move_by(&mut self, by: Vector<f32>);
     fn rotate_by(&mut self, _by: Vector<f32>) {}
-    fn get_color(&self) -> Color;
     
 }
 pub struct Scene {
@@ -28,10 +27,10 @@ impl Scene {
         let mut min_distance = std::f32::MAX;
         let mut color = Color::White;
         for object in &self.objects {
-            let distance = object.sdf(&point);
+            let (ocolor, distance) = object.sdf(&point);
             if distance < min_distance {
                 min_distance = distance;
-                color = object.get_color();
+                color = ocolor;
             }
         }
         (min_distance, color)
@@ -54,8 +53,9 @@ impl Sphere {
     }
 }
 impl Object for Sphere {
-    fn sdf(&self, point: &Vector<f32>) -> f32 {
-        (point.clone() - self.position).length() - self.radius
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
+        (self.color, (point.clone() - self.position).length() - self.radius)
+
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
@@ -64,10 +64,6 @@ impl Object for Sphere {
 
     fn position(&self) -> Vector<f32> {
         self.position
-    }
-
-    fn get_color(&self) -> Color {
-        self.color
     }
 }
 
@@ -87,8 +83,8 @@ impl Plane {
     }
 }
 impl Object for Plane {
-    fn sdf(&self, point: &Vector<f32>) -> f32 {
-        Vector::dot(point.clone() - self.position, self.normal)
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
+        (self.color, Vector::dot(point.clone() - self.position, self.normal))
     }
 
     fn move_by(&mut self, _by: Vector<f32>) {
@@ -101,10 +97,6 @@ impl Object for Plane {
 
     fn position(&self) -> Vector<f32> {
         self.position
-    }
-
-    fn get_color(&self) -> Color {
-        self.color
     }
 }
 
@@ -144,7 +136,7 @@ impl Donut {
     }
 }
 impl Object for Donut {
-    fn sdf(&self, point: &Vector<f32>) -> f32 {
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
         let mut p = point.clone() - self.position;
         p = p
             .rotate_x(self.rotation.x)
@@ -154,7 +146,7 @@ impl Object for Donut {
         q = q.normalize() * self.radius;
         let mut d = (p - q).length() - self.thickness;
         d = d.abs();
-        d
+        (self.color, d)
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
@@ -167,10 +159,6 @@ impl Object for Donut {
 
     fn position(&self) -> Vector<f32> {
         self.position
-    }
-
-    fn get_color(&self) -> Color {
-        self.color
     }
 }
 
@@ -206,7 +194,7 @@ impl Cuboid {
     }
 }
 impl Object for Cuboid {
-    fn sdf(&self, point: &Vector<f32>) -> f32 {
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
         let mut p = point - &self.position;
         p = p
             .rotate_x(self.rotation.x)
@@ -218,7 +206,7 @@ impl Object for Cuboid {
             p.z.abs() - self.size.z,
         );
         d = Vector::new(d.x.max(0.0), d.y.max(0.0), d.z.max(0.0));
-        d.length()
+        (self.color, d.length())
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
@@ -232,10 +220,6 @@ impl Object for Cuboid {
     fn position(&self) -> Vector<f32> {
         self.position
     }
-
-    fn get_color(&self) -> Color {
-        self.color
-    }
 }
 
 pub struct SmoothUnion {
@@ -244,7 +228,6 @@ pub struct SmoothUnion {
     pub center: Vector<f32>,
     pub centered: bool,
     pub k: f32,
-    pub color: Color,
 }
 #[allow(dead_code)]
 impl SmoothUnion {
@@ -260,16 +243,28 @@ impl SmoothUnion {
             object2,
             center,
             centered,
-            k,
-            color: Color::White,
+            k
         }
     }
 }
 impl Object for SmoothUnion {
-    fn sdf(&self, point: &Vector<f32>) -> f32 {
-        let h = (self.object1.sdf(point) - self.object2.sdf(point) + self.k) / (2.0 * self.k);
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
+        let o1 = self.object1.sdf(point);
+        let o2 = self.object2.sdf(point);
+        let h = (o1.1 - o2.1 + self.k) / (2.0 * self.k);
         let h = h.max(0.0).min(1.0);
-        self.object1.sdf(point) * (1.0 - h) + self.object2.sdf(point) * h - self.k * h * (1.0 - h)
+        let dist = o1.1 * (1.0 - h) + o2.1 * h - self.k * h * (1.0 - h);
+        
+        if let Color::TrueColor { r: r1, g: g1, b: b1 } = o1.0 {
+            if let Color::TrueColor { r: r2, g: g2, b: b2 } = o2.0 {
+                let r = ((r1 as f32) * (1.0 - h) + (r2 as f32) * h) as u8;
+                let g = ((g1 as f32) * (1.0 - h) + (g2 as f32) * h) as u8;
+                let b = ((b1 as f32) * (1.0 - h) + (b2 as f32) * h) as u8;
+                let color = Color::TrueColor { r, g, b };
+                return (color, dist);
+            }
+        };
+        panic!("OBJECTS IN SMOOTH UNION MUST HAVE TRUECOLOR");   
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
@@ -296,9 +291,5 @@ impl Object for SmoothUnion {
 
     fn position(&self) -> Vector<f32> {
         self.center
-    }
-
-    fn get_color(&self) -> Color {
-        self.object1.get_color()
     }
 }

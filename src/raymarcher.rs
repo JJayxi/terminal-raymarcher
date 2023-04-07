@@ -80,8 +80,6 @@ pub fn render_pixel(
     //TODO: the problem is that because we start the ray very close to the surface of the objet
     //the closest distance is always really small, so the penumbra is always 1.0,
     //making everything look like it's in the shadow
-
-    //let k = (scene.light_position - point).normalize();
     
     if let Color::TrueColor { r, g, b } = ray.color {
         return Color::TrueColor {
@@ -120,7 +118,7 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
 }
 
 pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
-    let epsilon: f32 = -0.0001;
+    let epsilon: f32 = -0.0002;
 
     let psdf = scene.sdf(point).0;
 

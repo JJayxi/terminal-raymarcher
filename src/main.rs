@@ -65,7 +65,7 @@ fn main() {
     //    Color::TrueColor { r: (150), g: (150), b: (255) }
     //)));
 
-    let light_position = Vector::new(-20.0, -10.0, 0.0);
+    let light_position = Vector::new(0.0, 50.0, 0.0);
     let mut scene = Scene::new(scene_objs, light_position);
 
     let mut _frame_count = 0;
@@ -75,7 +75,7 @@ fn main() {
         let elapsed = now.elapsed();
         println!("Frame time: {:?}", elapsed);
 
-        let frame_time: u64 = 80;
+        let frame_time: u64 = 100;
         if elapsed < Duration::from_millis(frame_time) {
             let wait_time = Duration::from_millis(frame_time) - elapsed;
             thread::sleep(wait_time);
