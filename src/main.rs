@@ -1,16 +1,16 @@
 use math_vector::Vector;
+use rayon::iter::Repeat;
 use rayscii::*;
 
-use std::f32::consts;
 use std::time::Instant;
 
 mod camera;
 mod raymarcher;
 mod scene;
 use camera::Camera;
+use colored::Color;
 use raymarcher::render;
 use scene::*;
-use colored::Color;
 
 use std::{thread, time::Duration};
 
@@ -28,28 +28,44 @@ fn main() {
     scene_objs.push(Box::new(Plane::new_with_color(
         Vector::new(0.0, -60.0, 0.0),
         Vector::new(0., 1.0, 0.0),
-        Color::TrueColor { r: (255), g: (255), b: (255) }
+        Color::TrueColor {
+            r: (255),
+            g: (255),
+            b: (255),
+        },
     )));
-    scene_objs.push(
-        Box::new(SmoothUnion::new(
-            Box::new(Donut::new_with_color(
-                Vector::new(-30.0, 0.0, -60.0),
-                Vector::new(consts::PI / 4.0, 0.0, 0.0),
-                32.0,
-                8.0,
-                Color::TrueColor { r: (255), g: (100), b: (100) }
-            )),
-            Box::new(Cuboid::new_with_color(
-                Vector::new(30.0, 0.0, -60.0),
-                Vector::new(0.0, 0.0, 0.0),
-                Vector::new(20.0, 20.0, 20.0),
-                Color::TrueColor { r: (150), g: (150), b: (255) }
-            )),
-            Vector::new(0.0, 0.0, -60.0),
-            false,
-            50.0
-        )
-    ));
+    scene_objs.push(Box::new(Repeat::new(
+        Box::new(Sphere::new_with_color(
+            Vector::new(0.0, 0.0, 0.0),
+            50.0,
+            Color::TrueColor {
+                r: (255),
+                g: (255),
+                b: (255),
+            },
+        )),
+        Vector::new(200.0, 200.0, 200.0),
+    )));
+    //scene_objs.push(
+    //    Box::new(SmoothUnion::new(
+    //        Box::new(Donut::new_with_color(
+    //            Vector::new(-30.0, 0.0, -60.0),
+    //            Vector::new(consts::PI / 4.0, 0.0, 0.0),
+    //            32.0,
+    //            8.0,
+    //            Color::TrueColor { r: (255), g: (100), b: (100) }
+    //        )),
+    //        Box::new(Cuboid::new_with_color(
+    //            Vector::new(30.0, 0.0, -60.0),
+    //            Vector::new(0.0, 0.0, 0.0),
+    //            Vector::new(20.0, 20.0, 20.0),
+    //            Color::TrueColor { r: (150), g: (150), b: (255) }
+    //        )),
+    //        Vector::new(0.0, 0.0, -60.0),
+    //        false,
+    //        50.0
+    //    )
+    //));
     //scene_objs.push(
     //    Box::new(Donut::new_with_color(
     //    Vector::new(0.0, 0.0, -60.0),
@@ -74,12 +90,12 @@ fn main() {
         render(&screen, &camera, &scene, 60, 400.0);
         let elapsed = now.elapsed();
         println!("Frame time: {:?}", elapsed);
-
-        let frame_time: u64 = 100;
+        thread::sleep(Duration::from_millis(10));
+        /*let frame_time: u64 = 100;
         if elapsed < Duration::from_millis(frame_time) {
             let wait_time = Duration::from_millis(frame_time) - elapsed;
             thread::sleep(wait_time);
-        }
+        }*/
 
         //scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
         scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
