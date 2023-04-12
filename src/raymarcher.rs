@@ -54,13 +54,12 @@ pub fn render_pixel(
     let mut light_ray = Ray::new(point + normal, light_direction);
     let light_distance = point.distance(scene.light_position);
 
-    let shadowed =
-        ray_march(&mut light_ray, scene, max_iterations, light_distance) < light_distance;
+    let lightray_distance = ray_march(&mut light_ray, scene, max_iterations, light_distance);
 
     let mut brightness = Vector::dot(normal, light_direction).max(0.0); // * penumbra
 
-    if shadowed {
-        let penumbra = (light_distance - light_ray.distance_closest_miss) / light_distance;
+    if lightray_distance < light_distance {
+        let penumbra = (light_distance - lightray_distance) / light_distance;
         brightness *= 1.0 - penumbra;
         if let Color::TrueColor { r, g, b } = ray.color {
             return Color::TrueColor {
@@ -69,17 +68,8 @@ pub fn render_pixel(
                 b: ((b as f32) * brightness) as u8,
             };
         }
-        return Color::TrueColor {
-            r: (255.0 * brightness) as u8,
-            g: (255.0 * brightness) as u8,
-            b: (255.0 * brightness) as u8,
-        };
+        panic!("Color is not true color");
     }
-
-    //let penumbra = (ray.closest_miss/(ray.distance_closest_miss)).min(1.0);
-    //TODO: the problem is that because we start the ray very close to the surface of the objet
-    //the closest distance is always really small, so the penumbra is always 1.0,
-    //making everything look like it's in the shadow
 
     if let Color::TrueColor { r, g, b } = ray.color {
         return Color::TrueColor {
@@ -101,21 +91,17 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
         if sdf < ray.closest_miss {
             ray.color = color;
             ray.closest_miss = sdf;
-            ray.distance_closest_miss = distance;
         }
 
         if sdf < 1.0 {
             return distance;
         }
 
-        //we need to calculate the largest possible angle between the current sphere
-        //to the direction it is going. We then take the minimum of this angle in the entire
-        //ray march and use it to calculate the penumbra
-
         distance += sdf;
         if distance > max_distance {
             return max_distance;
         }
+        ray.march_count += 1;
     }
 
     return distance;
@@ -135,29 +121,11 @@ pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
     normal.normalize()
 }
 
-// pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
-//     let epsilon: f32 = -0.002;
-
-//     let v1 = Vector::new(
-//         scene.sdf(&(point - &Vector::new(epsilon, 0.0, 0.0))).0,
-//         scene.sdf(&(point - &Vector::new(0.0, epsilon, 0.0))).0,
-//         scene.sdf(&(point - &Vector::new(0.0, 0.0, epsilon))).0,
-//     );
-
-//     let v2 = Vector::new(
-//         scene.sdf(&(point + &Vector::new(epsilon, 0.0, 0.0))).0,
-//         scene.sdf(&(point + &Vector::new(0.0, epsilon, 0.0))).0,
-//         scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0,
-//     );
-
-//     (v1 - v2).normalize()
-// }
-
 pub struct Ray {
     pub origin: Vector<f32>,
     pub direction: Vector<f32>,
     pub closest_miss: f32,
-    pub distance_closest_miss: f32,
+    pub march_count: u32,
     pub color: Color,
 }
 
@@ -167,7 +135,7 @@ impl Ray {
             origin,
             direction,
             closest_miss: f32::MAX,
-            distance_closest_miss: 0.0,
+            march_count: 0,
             color: Color::White,
         }
     }

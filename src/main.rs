@@ -16,7 +16,8 @@ use std::{thread, time::Duration};
 fn main() {
     let screen = Screen::new(150, 50);
 
-    let camera = Camera::new(
+    let mut camera = Camera::new(
+        Vector::new(0.0, 0.0, 10.0),
         Vector::new(0.0, 0.0, 0.0),
         90.0,
         (screen.width, screen.height),
@@ -28,9 +29,9 @@ fn main() {
         Vector::new(0.0, -60.0, 0.0),
         Vector::new(0., 1.0, 0.0),
         Color::TrueColor {
-            r: (255),
+            r: (230),
             g: (255),
-            b: (255),
+            b: (230),
         },
     )));
 
@@ -58,7 +59,7 @@ fn main() {
         )),
         Vector::new(0.0, 0.0, -60.0),
         false,
-        50.0,
+        30.0,
     )));
 
     let light_position = Vector::new(0.0, 50.0, 0.0);
@@ -80,5 +81,7 @@ fn main() {
         //scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
         scene.objects[1].rotate_by(Vector::new(0.07, 0.15, 0.11));
         _frame_count += 1;
+
+        //camera.rotate_by(Vector::new(0.0, 0.0, 0.0));
     }
 }

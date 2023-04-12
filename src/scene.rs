@@ -2,12 +2,6 @@ use colored::Color;
 use math_vector::Vector;
 use std::marker::Sync;
 
-pub trait Object: Sync {
-    fn sdf(&self, point: &Vector<f32>) -> (Color, f32);
-    fn position(&self) -> Vector<f32>;
-    fn move_by(&mut self, by: Vector<f32>);
-    fn rotate_by(&mut self, _by: Vector<f32>) {}
-}
 pub struct Scene {
     pub objects: Vec<Box<dyn Object>>,
     pub light_position: Vector<f32>,
@@ -20,8 +14,7 @@ impl Scene {
             light_position,
         }
     }
-}
-impl Scene {
+    
     pub fn sdf(&self, point: &Vector<f32>) -> (f32, Color) {
         let mut min_distance = std::f32::MAX;
         let mut color = Color::White;
@@ -35,6 +28,14 @@ impl Scene {
         (min_distance, color)
     }
 }
+
+pub trait Object: Sync {
+    fn sdf(&self, point: &Vector<f32>) -> (Color, f32);
+    fn position(&self) -> Vector<f32>;
+    fn move_by(&mut self, by: Vector<f32>);
+    fn rotate_by(&mut self, _by: Vector<f32>) {}
+}
+
 
 pub struct Sphere {
     pub position: Vector<f32>,
