@@ -1,7 +1,7 @@
 use math_vector::Vector;
 use rayscii::*;
 
-use std::{time::Instant, f32::consts};
+use std::{f32::consts, time::Instant};
 
 mod camera;
 mod raymarcher;
@@ -16,51 +16,78 @@ use std::{thread, time::Duration};
 fn main() {
     let screen = Screen::new(150, 50);
 
-    let mut camera = Camera::new(
+    let camera = Camera::new(
         Vector::new(0.0, 0.0, 10.0),
         Vector::new(0.0, 0.0, 0.0),
         90.0,
         (screen.width, screen.height),
         1.7,
     );
-    let mut scene_objs: Vec<Box<dyn Object>> = Vec::new();
+    let mut scene_objs: Vec<Object> = Vec::new();
 
-    scene_objs.push(Box::new(Plane::new_with_color(
+    //scene_objs.push(Box::new(Plane::new_with_color(
+    //    Vector::new(0.0, -60.0, 0.0),
+    //    Vector::new(0., 1.0, 0.0),
+    //    Color::TrueColor {
+    //        r: (230),
+    //        g: (255),
+    //        b: (230),
+    //    },
+    //)));
+
+    scene_objs.push(Object::new(
         Vector::new(0.0, -60.0, 0.0),
-        Vector::new(0., 1.0, 0.0),
+        Vector::new(0.0, 0.0, 0.0),
         Color::TrueColor {
             r: (230),
             g: (255),
             b: (230),
         },
-    )));
+        Shape::Plane {
+            normal: Vector::new(0.0, 1.0, 0.0),
+        },
+    ));
+    {
+        let donut = Object {
+            position: Vector::new(-30.0, 0.0, -60.0),
+            rotation: Vector::new(consts::PI / 4.0, 0.0, 0.0),
+            color: Color::TrueColor {
+                r: 255,
+                g: 100,
+                b: 100,
+            },
+            shape: Shape::Donut {
+                radius: 32.0,
+                thickness: 8.0,
+            },
+        };
 
-    scene_objs.push(Box::new(SmoothUnion::new(
-        Box::new(Donut::new_with_color(
-            Vector::new(-30.0, 0.0, -60.0),
-            Vector::new(consts::PI / 4.0, 0.0, 0.0),
-            32.0,
-            8.0,
-            Color::TrueColor {
-                r: (255),
-                g: (100),
-                b: (100),
+        let cuboid = Object {
+            position: Vector::new(30.0, 0.0, -60.0),
+            rotation: Vector::new(0.0, 0.0, 0.0),
+            color: Color::TrueColor {
+                r: 150,
+                g: 150,
+                b: 255,
             },
-        )),
-        Box::new(Cuboid::new_with_color(
-            Vector::new(30.0, 0.0, -60.0),
-            Vector::new(0.0, 0.0, 0.0),
-            Vector::new(20.0, 20.0, 20.0),
-            Color::TrueColor {
-                r: (150),
-                g: (150),
-                b: (255),
+            shape: Shape::Cuboid {
+                size: Vector::new(20.0, 20.0, 20.0),
             },
-        )),
-        Vector::new(0.0, 0.0, -60.0),
-        false,
-        30.0,
-    )));
+        };
+
+        let union = Object {
+            position: Vector::new(0.0, 0.0, -60.0),
+            rotation: Vector::new(0.0, 0.0, 0.0),
+            color: Color::TrueColor { r: 0, g: 0, b: 0 },
+            shape: Shape::SmoothUnion {
+                shape1: Box::new(donut),
+                shape2: Box::new(cuboid),
+                k: 30.0,
+            },
+        };
+
+        scene_objs.push(union);
+    }
 
     let light_position = Vector::new(0.0, 50.0, 0.0);
     let mut scene = Scene::new(scene_objs, light_position);
