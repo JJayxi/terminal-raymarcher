@@ -1,8 +1,7 @@
 use math_vector::Vector;
-use rayon::iter::Repeat;
 use rayscii::*;
 
-use std::time::Instant;
+use std::{time::Instant, f32::consts};
 
 mod camera;
 mod raymarcher;
@@ -34,52 +33,33 @@ fn main() {
             b: (255),
         },
     )));
-    scene_objs.push(Box::new(Repeat::new(
-        Box::new(Sphere::new_with_color(
-            Vector::new(0.0, 0.0, 0.0),
-            50.0,
+
+    scene_objs.push(Box::new(SmoothUnion::new(
+        Box::new(Donut::new_with_color(
+            Vector::new(-30.0, 0.0, -60.0),
+            Vector::new(consts::PI / 4.0, 0.0, 0.0),
+            32.0,
+            8.0,
             Color::TrueColor {
                 r: (255),
-                g: (255),
+                g: (100),
+                b: (100),
+            },
+        )),
+        Box::new(Cuboid::new_with_color(
+            Vector::new(30.0, 0.0, -60.0),
+            Vector::new(0.0, 0.0, 0.0),
+            Vector::new(20.0, 20.0, 20.0),
+            Color::TrueColor {
+                r: (150),
+                g: (150),
                 b: (255),
             },
         )),
-        Vector::new(200.0, 200.0, 200.0),
+        Vector::new(0.0, 0.0, -60.0),
+        false,
+        50.0,
     )));
-    //scene_objs.push(
-    //    Box::new(SmoothUnion::new(
-    //        Box::new(Donut::new_with_color(
-    //            Vector::new(-30.0, 0.0, -60.0),
-    //            Vector::new(consts::PI / 4.0, 0.0, 0.0),
-    //            32.0,
-    //            8.0,
-    //            Color::TrueColor { r: (255), g: (100), b: (100) }
-    //        )),
-    //        Box::new(Cuboid::new_with_color(
-    //            Vector::new(30.0, 0.0, -60.0),
-    //            Vector::new(0.0, 0.0, 0.0),
-    //            Vector::new(20.0, 20.0, 20.0),
-    //            Color::TrueColor { r: (150), g: (150), b: (255) }
-    //        )),
-    //        Vector::new(0.0, 0.0, -60.0),
-    //        false,
-    //        50.0
-    //    )
-    //));
-    //scene_objs.push(
-    //    Box::new(Donut::new_with_color(
-    //    Vector::new(0.0, 0.0, -60.0),
-    //    Vector::new(consts::PI / 4.0, 0.0, 0.0),
-    //    32.0,
-    //    8.0,
-    //    Color::TrueColor { r: (255), g: (100), b: (100) }
-    //)));
-    //scene_objs.push(Box::new(Cuboid::new_with_color(
-    //    Vector::new(0.0, 0.0, -60.0),
-    //    Vector::new(0.0, 0.0, 0.0),
-    //    Vector::new(20.0, 20.0, 20.0),
-    //    Color::TrueColor { r: (150), g: (150), b: (255) }
-    //)));
 
     let light_position = Vector::new(0.0, 50.0, 0.0);
     let mut scene = Scene::new(scene_objs, light_position);

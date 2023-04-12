@@ -80,7 +80,7 @@ pub fn render_pixel(
     //TODO: the problem is that because we start the ray very close to the surface of the objet
     //the closest distance is always really small, so the penumbra is always 1.0,
     //making everything look like it's in the shadow
-    
+
     if let Color::TrueColor { r, g, b } = ray.color {
         return Color::TrueColor {
             r: ((r as f32) * brightness) as u8,
@@ -104,9 +104,13 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
             ray.distance_closest_miss = distance;
         }
 
-        if sdf < 0.01 {
+        if sdf < 1.0 {
             return distance;
         }
+
+        //we need to calculate the largest possible angle between the current sphere
+        //to the direction it is going. We then take the minimum of this angle in the entire
+        //ray march and use it to calculate the penumbra
 
         distance += sdf;
         if distance > max_distance {
@@ -118,7 +122,7 @@ pub fn ray_march(ray: &mut Ray, scene: &Scene, max_iterations: u32, max_distance
 }
 
 pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
-    let epsilon: f32 = -0.0002;
+    let epsilon: f32 = -0.001;
 
     let psdf = scene.sdf(point).0;
 
@@ -130,6 +134,24 @@ pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
 
     normal.normalize()
 }
+
+// pub fn find_normal(scene: &Scene, point: &Vector<f32>) -> Vector<f32> {
+//     let epsilon: f32 = -0.002;
+
+//     let v1 = Vector::new(
+//         scene.sdf(&(point - &Vector::new(epsilon, 0.0, 0.0))).0,
+//         scene.sdf(&(point - &Vector::new(0.0, epsilon, 0.0))).0,
+//         scene.sdf(&(point - &Vector::new(0.0, 0.0, epsilon))).0,
+//     );
+
+//     let v2 = Vector::new(
+//         scene.sdf(&(point + &Vector::new(epsilon, 0.0, 0.0))).0,
+//         scene.sdf(&(point + &Vector::new(0.0, epsilon, 0.0))).0,
+//         scene.sdf(&(point + &Vector::new(0.0, 0.0, epsilon))).0,
+//     );
+
+//     (v1 - v2).normalize()
+// }
 
 pub struct Ray {
     pub origin: Vector<f32>,

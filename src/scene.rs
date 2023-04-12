@@ -1,13 +1,12 @@
+use colored::Color;
 use math_vector::Vector;
 use std::marker::Sync;
-use colored::Color;
 
 pub trait Object: Sync {
     fn sdf(&self, point: &Vector<f32>) -> (Color, f32);
     fn position(&self) -> Vector<f32>;
     fn move_by(&mut self, by: Vector<f32>);
     fn rotate_by(&mut self, _by: Vector<f32>) {}
-    
 }
 pub struct Scene {
     pub objects: Vec<Box<dyn Object>>,
@@ -45,17 +44,27 @@ pub struct Sphere {
 #[allow(dead_code)]
 impl Sphere {
     pub fn new(position: Vector<f32>, radius: f32) -> Sphere {
-        Sphere { position, radius, color: Color::White }
+        Sphere {
+            position,
+            radius,
+            color: Color::White,
+        }
     }
 
     pub fn new_with_color(position: Vector<f32>, radius: f32, color: Color) -> Sphere {
-        Sphere { position, radius, color }
+        Sphere {
+            position,
+            radius,
+            color,
+        }
     }
 }
 impl Object for Sphere {
     fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
-        (self.color, (point.clone() - self.position).length() - self.radius)
-
+        (
+            self.color,
+            (point.clone() - self.position).length() - self.radius,
+        )
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
@@ -75,16 +84,27 @@ pub struct Plane {
 #[allow(dead_code)]
 impl Plane {
     pub fn new(position: Vector<f32>, normal: Vector<f32>) -> Plane {
-        Plane { position, normal, color: Color::White }
+        Plane {
+            position,
+            normal,
+            color: Color::White,
+        }
     }
 
     pub fn new_with_color(position: Vector<f32>, normal: Vector<f32>, color: Color) -> Plane {
-        Plane { position, normal, color }
+        Plane {
+            position,
+            normal,
+            color,
+        }
     }
 }
 impl Object for Plane {
     fn sdf(&self, point: &Vector<f32>) -> (Color, f32) {
-        (self.color, Vector::dot(point.clone() - self.position, self.normal))
+        (
+            self.color,
+            Vector::dot(point.clone() - self.position, self.normal),
+        )
     }
 
     fn move_by(&mut self, _by: Vector<f32>) {
@@ -222,6 +242,7 @@ impl Object for Cuboid {
     }
 }
 
+
 pub struct SmoothUnion {
     pub object1: Box<dyn Object>,
     pub object2: Box<dyn Object>,
@@ -243,7 +264,7 @@ impl SmoothUnion {
             object2,
             center,
             centered,
-            k
+            k,
         }
     }
 }
@@ -254,17 +275,19 @@ impl Object for SmoothUnion {
         let h = (o1.1 - o2.1 + self.k) / (2.0 * self.k);
         let h = h.max(0.0).min(1.0);
         let dist = o1.1 * (1.0 - h) + o2.1 * h - self.k * h * (1.0 - h);
-        
-        if let Color::TrueColor { r: r1, g: g1, b: b1 } = o1.0 {
-            if let Color::TrueColor { r: r2, g: g2, b: b2 } = o2.0 {
+
+        if let (
+            (Color::TrueColor { r: r1, g: g1, b: b1 }, _), 
+            (Color::TrueColor { r: r2, g: g2, b: b2 }, _)) = 
+            (o1,o2) {
                 let r = ((r1 as f32) * (1.0 - h) + (r2 as f32) * h) as u8;
                 let g = ((g1 as f32) * (1.0 - h) + (g2 as f32) * h) as u8;
                 let b = ((b1 as f32) * (1.0 - h) + (b2 as f32) * h) as u8;
                 let color = Color::TrueColor { r, g, b };
                 return (color, dist);
-            }
+            
         };
-        panic!("OBJECTS IN SMOOTH UNION MUST HAVE TRUECOLOR");   
+        panic!("OBJECTS IN SMOOTH UNION MUST HAVE TRUECOLOR");
     }
 
     fn move_by(&mut self, by: Vector<f32>) {
